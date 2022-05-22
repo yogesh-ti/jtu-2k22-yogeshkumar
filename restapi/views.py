@@ -178,7 +178,7 @@ class ExpenseViewSet(ModelViewSet):
 @api_view(['post'])
 @authentication_classes([])
 @permission_classes([])
-def logProcessor(request):
+def log_processor(request):
     data = request.data
     num_threads = data['parallelFileProcessingCount']
     log_files = data['logFiles']
