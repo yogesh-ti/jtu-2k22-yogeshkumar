@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from decimal import Decimal
 import urllib.request
 from datetime import datetime
+import logging
 
 from django.http import HttpResponse
 from django.contrib.auth.models import User
@@ -18,7 +19,7 @@ from restapi.models import Category, Group, Expense, UserExpense
 from restapi.serializers import UserSerializer, CategorySerializer, GroupSerializer, ExpensesSerializer
 from restapi.custom_exception import UnauthorizedUserException
 
-
+logger = logging.getLogger(__name__)
 
 def index(_request):
     return HttpResponse("Hello, world. You're at Rest.")
@@ -27,11 +28,14 @@ def index(_request):
 @api_view(['POST'])
 def logout(request):
     request.user.auth_token.delete()
+    logger.info('User has logged out')
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @api_view(['GET'])
 def balance(request):
+    start_time = datetime.now()
+
     user = request.user
     expenses = Expense.objects.filter(users__in=user.expenses.all())
     final_balance = {}
@@ -47,10 +51,16 @@ def balance(request):
     final_balance = {k: v for k, v in final_balance.items() if v != 0}
 
     response = [{"user": k, "amount": int(v)} for k, v in final_balance.items()]
+
+    time_taken = datetime().now() - start_time
+
+    logger.info(f'Balance request process time: {int(time_taken.total_seconds() * 1000)} ms')
     return Response(response, status=status.HTTP_200_OK)
 
 
 def normalize(expense):
+    start_time = datetime.now()
+
     user_balances = expense.users.all()
     dues = {}
     for user_balance in user_balances:
@@ -70,6 +80,10 @@ def normalize(expense):
             start += 1
         else:
             end -= 1
+    
+    time_taken = datetime().now() - start_time
+
+    logger.info(f'Balance normalization time: {int(time_taken.total_seconds() * 1000)} ms')
     return balances
 
 
