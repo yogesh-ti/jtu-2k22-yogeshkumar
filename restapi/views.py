@@ -33,7 +33,7 @@ def logout(request):
 @api_view(['GET'])
 def balance(request):
     user = request.user
-    expenses = Expenses.objects.filter(users__in=user.expenses.all())
+    expenses = Expense.objects.filter(users__in=user.expenses.all())
     final_balance = {}
     for expense in expenses:
         expense_balances = normalize(expense)
