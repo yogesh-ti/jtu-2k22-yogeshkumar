@@ -2,7 +2,7 @@ from rest_framework.serializers import ModelSerializer
 from rest_framework.serializers import ValidationError
 from django.contrib.auth.models import User
 
-from restapi.models import Category, Groups, UserExpense, Expenses
+from restapi.models import Category, Group, UserExpense, Expense
 
 
 class UserSerializer(ModelSerializer):
@@ -28,7 +28,7 @@ class GroupSerializer(ModelSerializer):
     members = UserSerializer(many=True, required=False)
 
     class Meta(object):
-        model = Groups
+        model = Group
         fields = '__all__'
 
 
@@ -43,7 +43,7 @@ class ExpensesSerializer(ModelSerializer):
 
     def create(self, validated_data):
         expense_users = validated_data.pop('users')
-        expense = Expenses.objects.create(**validated_data)
+        expense = Expense.objects.create(**validated_data)
         for eu in expense_users:
             UserExpense.objects.create(expense=expense, **eu)
         return expense
@@ -73,7 +73,7 @@ class ExpensesSerializer(ModelSerializer):
             raise ValidationError('Single user appears multiple times')
 
         # if data.get('group', None) is not None:
-        #     group = Groups.objects.get(pk=data['group'].id)
+        #     group = Group.objects.get(pk=data['group'].id)
         #     group_users = group.members.all()
         #     if user not in group_users:
         #         raise UnauthorizedUserException()
@@ -98,5 +98,5 @@ class ExpensesSerializer(ModelSerializer):
         return attrs
 
     class Meta(object):
-        model = Expenses
+        model = Expense
         fields = '__all__'

@@ -2,7 +2,7 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 from rest_framework.authtoken import views
 
-from restapi.views import UserViewSet, CategoryViewSet, GroupViewSet, ExpensesViewSet, index, logout, balance, \
+from restapi.views import UserViewSet, CategoryViewSet, GroupViewSet, ExpenseViewSet, index, logout, balance, \
     logProcessor
 
 
@@ -10,7 +10,7 @@ router = DefaultRouter()
 router.register('users', UserViewSet)
 router.register('categories', CategoryViewSet)
 router.register('groups', GroupViewSet)
-router.register('expenses', ExpensesViewSet)
+router.register('expenses', ExpenseViewSet)
 
 urlpatterns = [
     path('', index, name='index'),

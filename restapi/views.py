@@ -86,7 +86,7 @@ class CategoryViewSet(ModelViewSet):
 
 
 class GroupViewSet(ModelViewSet):
-    queryset = Groups.objects.all()
+    queryset = Group.objects.all()
     serializer_class = GroupSerializer
 
     def get_queryset(self):
@@ -99,7 +99,7 @@ class GroupViewSet(ModelViewSet):
     def create(self, request, *args, **kwargs):
         user = self.request.user
         data = self.request.data
-        group = Groups(**data)
+        group = Group(**data)
         group.save()
         group.members.add(user)
         serializer = self.get_serializer(group)
@@ -107,7 +107,7 @@ class GroupViewSet(ModelViewSet):
 
     @action(methods=['put'], detail=True)
     def members(self, request, pk=None):
-        group = Groups.objects.get(id=pk)
+        group = Group.objects.get(id=pk)
         if group not in self.get_queryset():
             raise UnauthorizedUserException()
         body = request.data
@@ -124,7 +124,7 @@ class GroupViewSet(ModelViewSet):
 
     @action(methods=['get'], detail=True)
     def expenses(self, _request, pk=None):
-        group = Groups.objects.get(id=pk)
+        group = Group.objects.get(id=pk)
         if group not in self.get_queryset():
             raise UnauthorizedUserException()
         expenses = group.expenses_set
@@ -133,10 +133,10 @@ class GroupViewSet(ModelViewSet):
 
     @action(methods=['get'], detail=True)
     def balances(self, _request, pk=None):
-        group = Groups.objects.get(id=pk)
+        group = Group.objects.get(id=pk)
         if group not in self.get_queryset():
             raise UnauthorizedUserException()
-        expenses = Expenses.objects.filter(group=group)
+        expenses = Expense.objects.filter(group=group)
         dues = {}
         for expense in expenses:
             user_balances = UserExpense.objects.filter(expense=expense)
@@ -162,17 +162,17 @@ class GroupViewSet(ModelViewSet):
         return Response(balances, status=status.HTTP_200_OK)
 
 
-class ExpensesViewSet(ModelViewSet):
-    queryset = Expenses.objects.all()
+class ExpenseViewSet(ModelViewSet):
+    queryset = Expense.objects.all()
     serializer_class = ExpensesSerializer
 
     def get_queryset(self):
         user = self.request.user
         if self.request.query_params.get('q', None) is not None:
-            expenses = Expenses.objects.filter(users__in=user.expenses.all())\
+            expenses = Expense.objects.filter(users__in=user.expenses.all())\
                 .filter(description__icontains=self.request.query_params.get('q', None))
         else:
-            expenses = Expenses.objects.filter(users__in=user.expenses.all())
+            expenses = Expense.objects.filter(users__in=user.expenses.all())
         return expenses
 
 @api_view(['post'])
