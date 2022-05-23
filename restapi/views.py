@@ -4,6 +4,7 @@ from decimal import Decimal
 import urllib.request
 from datetime import datetime
 import logging
+from concurrent.futures import ThreadPoolExecutor
 
 from django.http import HttpResponse
 from django.contrib.auth.models import User
@@ -15,6 +16,7 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 from rest_framework import status
 
+import restapi.constants
 from restapi.models import Category, Group, Expense, UserExpense
 from restapi.serializers import UserSerializer, CategorySerializer, GroupSerializer, ExpensesSerializer
 from restapi.custom_exception import UnauthorizedUserException
@@ -273,12 +275,15 @@ def reader(url, timeout):
 
 def multi_threaded_reader(urls, num_threads):
     """
-        Read multiple files through HTTP
+        Read multiple files through HTTP with threadpooling
     """
     result = []
-    for url in urls:
-        data = reader(url, 60)
-        data = data.decode('utf-8')
-        result.extend(data.split("\n"))
+
+    with ThreadPoolExecutor(max_workers=num_threads) as executor:
+        future_to_url = {executor.submit(reader, url, constants.HTTP_READ_TIMEOUT): url for url in URLS}
+        for future in concurrent.futures.as_completed(future_to_url):
+            data = future.result()
+            data = data.decode('utf-8')
+            result.extend(data.split("\n"))
     result = sorted(result, key=lambda elem:elem[1])
     return result
