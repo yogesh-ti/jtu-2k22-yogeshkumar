@@ -110,21 +110,32 @@ class GroupViewSet(ModelViewSet):
 
     @action(methods=['get'], detail=True)
     def expenses(self, _request, pk=None):
+        start_time = datetime.now()
+
         group = Group.objects.get(id=pk)
         if group not in self.get_queryset():
             raise UnauthorizedUserException()
         expenses = group.expenses_set
         serializer = ExpensesSerializer(expenses, many=True)
+
+        time_taken = datetime.now() - start_time
+
+        logger.info(f'Expense request process time: {int(time_taken.total_seconds() * 1000)} ms')
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(methods=['get'], detail=True)
     def balances(self, _request, pk=None):
+        start_time = datetime.now()
+
         group = Group.objects.get(id=pk)
         if group not in self.get_queryset():
             raise UnauthorizedUserException()
         expenses = Expense.objects.filter(group=group)
         balances = normalize(expenses)
 
+        time_taken = datetime.now() - start_time
+
+        logger.info(f'Group balance request process time: {int(time_taken.total_seconds() * 1000)} ms')
         return Response(balances, status=status.HTTP_200_OK)
 
 
