@@ -4,7 +4,6 @@ from decimal import Decimal
 import urllib.request
 from datetime import datetime
 import logging
-from concurrent.futures import ThreadPoolExecutor
 
 from django.http import HttpResponse
 from django.contrib.auth.models import User
