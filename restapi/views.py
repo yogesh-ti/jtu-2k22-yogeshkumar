@@ -19,7 +19,7 @@ import restapi.constants
 from restapi.models import Category, Group, Expense, UserExpense
 from restapi.serializers import UserSerializer, CategorySerializer, GroupSerializer, ExpensesSerializer
 from restapi.custom_exception import UnauthorizedUserException
-from restapi.utils import multi_threaded_reader, sort_by_time_stamp, transform, aggregate, response_format
+from restapi.utils import multi_threaded_reader, sort_by_time_stamp, transform, aggregate, response_format, normalize
 
 logger = logging.getLogger(__name__)
 
@@ -58,36 +58,6 @@ def balance(request):
 
     logger.info(f'Balance request process time: {int(time_taken.total_seconds() * 1000)} ms')
     return Response(response, status=status.HTTP_200_OK)
-
-
-def normalize(expense):
-    start_time = datetime.now()
-
-    user_balances = expense.users.all()
-    dues = {}
-    for user_balance in user_balances:
-        dues[user_balance.user] = dues.get(user_balance.user, 0) + user_balance.amount_lent \
-                                  - user_balance.amount_owed
-    dues = [(k, v) for k, v in sorted(dues.items(), key=lambda item: item[1])]
-    start = 0
-    end = len(dues) - 1
-    balances = []
-    while start < end:
-        amount = min(abs(dues[start][1]), abs(dues[end][1]))
-        user_balance = {"from_user": dues[start][0].id, "to_user": dues[end][0].id, "amount": amount}
-        balances.append(user_balance)
-        dues[start] = (dues[start][0], dues[start][1] + amount)
-        dues[end] = (dues[end][0], dues[end][1] - amount)
-        if dues[start][1] == 0:
-            start += 1
-        else:
-            end -= 1
-    
-    time_taken = datetime().now() - start_time
-
-    logger.info(f'Balance normalization time: {int(time_taken.total_seconds() * 1000)} ms')
-    return balances
-
 
 class UserViewSet(ModelViewSet):
     queryset = User.objects.all()
@@ -153,27 +123,7 @@ class GroupViewSet(ModelViewSet):
         if group not in self.get_queryset():
             raise UnauthorizedUserException()
         expenses = Expense.objects.filter(group=group)
-        dues = {}
-        for expense in expenses:
-            user_balances = UserExpense.objects.filter(expense=expense)
-            for user_balance in user_balances:
-                dues[user_balance.user] = dues.get(user_balance.user, 0) + user_balance.amount_lent \
-                                          - user_balance.amount_owed
-        dues = [(k, v) for k, v in sorted(dues.items(), key=lambda item: item[1])]
-        start = 0
-        end = len(dues) - 1
-        balances = []
-        while start < end:
-            amount = min(abs(dues[start][1]), abs(dues[end][1]))
-            amount = Decimal(amount).quantize(Decimal(10)**-2)
-            user_balance = {"from_user": dues[start][0].id, "to_user": dues[end][0].id, "amount": str(amount)}
-            balances.append(user_balance)
-            dues[start] = (dues[start][0], dues[start][1] + amount)
-            dues[end] = (dues[end][0], dues[end][1] - amount)
-            if dues[start][1] == 0:
-                start += 1
-            else:
-                end -= 1
+        balances = normalize(expenses)
 
         return Response(balances, status=status.HTTP_200_OK)
 
